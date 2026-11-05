@@ -6,6 +6,7 @@ export default {
     orders: 'Orders',
     finance: 'Finance',
     demandForecast: 'Demand Forecast',
+    restocking: 'Restocking',
     companyName: 'Catalyst Components',
     subtitle: 'Inventory Management System'
   },
@@ -112,6 +113,11 @@ export default {
     onTimeDelivery: 'On-Time Delivery',
     itemsCount: '{count} items',
     quantity: 'Qty',
+    submittedOrders: 'Submitted Orders',
+    leadTimeDays: '{days} days',
+    noSubmittedOrders: 'No restocking orders have been submitted yet.',
+    goToRestocking: 'Create one on the Restocking tab',
+    submittedOrdersError: 'Could not load submitted orders.',
     table: {
       orderNumber: 'Order Number',
       orderId: 'Order ID',
@@ -125,7 +131,8 @@ export default {
       totalValue: 'Total Value',
       status: 'Status',
       expectedDelivery: 'Expected Delivery',
-      actualDelivery: 'Actual Delivery'
+      actualDelivery: 'Actual Delivery',
+      leadTime: 'Lead Time'
     }
   },
 
@@ -188,6 +195,43 @@ export default {
     }
   },
 
+  // Restocking
+  restocking: {
+    title: 'Restocking',
+    description: 'Allocate a purchasing budget across items with a forecasted shortfall',
+    budgetTitle: 'Restocking Budget',
+    budgetHint: 'Items are funded in priority order until the budget runs out.',
+    budgetSlider: 'Budget amount',
+    budget: 'Budget',
+    allocated: 'Allocated',
+    remaining: 'Remaining',
+    recommendations: 'Recommended Items',
+    selectedSummary: '{selected} of {funded} funded items selected',
+    noRecommendations: 'Current stock covers all forecasted demand. Nothing needs restocking.',
+    notFunded: 'Not funded',
+    onOrder: '+{qty} on order',
+    ofShortfall: 'of {count}',
+    leadTimeDays: '{days} days',
+    selectItem: 'Include {name} in order',
+    placeOrder: 'Place Order',
+    placingOrder: 'Placing Order...',
+    successTitle: 'Order {orderNumber} submitted',
+    successDetail: 'Lead time {days} days, expected delivery {date}.',
+    viewOrders: 'View in Orders',
+    loadError: 'Failed to load restocking recommendations.',
+    submitError: 'Failed to place order. Please try again.',
+    table: {
+      item: 'Item',
+      category: 'Category',
+      onHandForecast: 'On Hand / Forecast',
+      orderQty: 'Order Qty',
+      unitCost: 'Unit Cost',
+      lineTotal: 'Line Total',
+      leadTime: 'Lead Time',
+      trend: 'Trend'
+    }
+  },
+
   // Filters
   filters: {
     timePeriod: 'Time Period',
@@ -206,7 +250,8 @@ export default {
     backordered: 'Backordered',
     inStock: 'In Stock',
     lowStock: 'Low Stock',
-    adequate: 'Adequate'
+    adequate: 'Adequate',
+    submitted: 'Submitted'
   },
 
   // Trends

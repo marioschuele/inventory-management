@@ -27,6 +27,58 @@
         </div>
       </div>
 
+      <!-- Restocking orders submitted from the Restocking tab (not affected by global filters) -->
+      <div class="card">
+        <div class="card-header">
+          <h3 class="card-title">{{ t('orders.submittedOrders') }} ({{ restockOrders.length }})</h3>
+        </div>
+        <div v-if="restockOrdersError" class="submitted-message">{{ t('orders.submittedOrdersError') }}</div>
+        <div v-else-if="restockOrders.length === 0" class="submitted-message">
+          {{ t('orders.noSubmittedOrders') }}
+          <router-link to="/restocking" class="restocking-link">{{ t('orders.goToRestocking') }}</router-link>
+        </div>
+        <div v-else class="table-container">
+          <table class="orders-table">
+            <thead>
+              <tr>
+                <th class="col-order-number">{{ t('orders.table.orderNumber') }}</th>
+                <th class="col-items">{{ t('orders.table.items') }}</th>
+                <th class="col-value">{{ t('orders.table.totalValue') }}</th>
+                <th class="col-date">{{ t('orders.table.orderDate') }}</th>
+                <th class="col-lead-time">{{ t('orders.table.leadTime') }}</th>
+                <th class="col-date">{{ t('orders.table.expectedDelivery') }}</th>
+                <th class="col-status">{{ t('orders.table.status') }}</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr v-for="order in restockOrders" :key="order.id">
+                <td class="col-order-number"><strong>{{ order.order_number }}</strong></td>
+                <td class="col-items">
+                  <details class="items-details">
+                    <summary class="items-summary">
+                      {{ t('orders.itemsCount', { count: order.items.length }) }}
+                    </summary>
+                    <div class="items-dropdown">
+                      <div v-for="item in order.items" :key="item.sku" class="item-entry">
+                        <span class="item-name">{{ translateProductName(item.name) }}</span>
+                        <span class="item-meta">{{ item.sku }} - {{ t('orders.quantity') }}: {{ item.quantity }} @ {{ formatCurrency(item.unit_price) }}</span>
+                      </div>
+                    </div>
+                  </details>
+                </td>
+                <td class="col-value"><strong>{{ formatCurrency(order.total_value) }}</strong></td>
+                <td class="col-date">{{ formatDate(order.order_date) }}</td>
+                <td class="col-lead-time">{{ t('orders.leadTimeDays', { days: order.lead_time_days }) }}</td>
+                <td class="col-date">{{ formatDate(order.expected_delivery) }}</td>
+                <td class="col-status">
+                  <span class="badge info">{{ t(`status.${order.status.toLowerCase()}`) }}</span>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
       <div class="card">
         <div class="card-header">
           <h3 class="card-title">{{ t('orders.allOrders') }} ({{ orders.length }})</h3>
@@ -95,6 +147,8 @@ export default {
     const loading = ref(true)
     const error = ref(null)
     const orders = ref([])
+    const restockOrders = ref([])
+    const restockOrdersError = ref(false)
 
     // Use shared filters
     const {
@@ -109,7 +163,28 @@ export default {
       try {
         loading.value = true
         const filters = getCurrentFilters()
-        const fetchedOrders = await api.getOrders(filters)
+
+        // allSettled so a failing restock-orders request only affects the
+        // "Submitted Orders" card and never the rest of the page.
+        // Restock orders ignore the global filters; they are simply refetched
+        // alongside the customer orders.
+        const [ordersResult, restockResult] = await Promise.allSettled([
+          api.getOrders(filters),
+          api.getRestockOrders()
+        ])
+
+        if (restockResult.status === 'fulfilled') {
+          restockOrders.value = restockResult.value
+          restockOrdersError.value = false
+        } else {
+          console.error('Failed to load submitted restock orders:', restockResult.reason)
+          restockOrdersError.value = true
+        }
+
+        if (ordersResult.status === 'rejected') {
+          throw ordersResult.reason
+        }
+        const fetchedOrders = ordersResult.value
 
         // Sort orders by order_date (earliest first)
         orders.value = fetchedOrders.sort((a, b) => {
@@ -146,11 +221,18 @@ export default {
     const formatDate = (dateString) => {
       const { currentLocale } = useI18n()
       const locale = currentLocale.value === 'ja' ? 'ja-JP' : 'en-US'
-      return new Date(dateString).toLocaleDateString(locale, {
+      const date = new Date(dateString)
+      if (isNaN(date.getTime())) return '-'
+      return date.toLocaleDateString(locale, {
         year: 'numeric',
         month: 'short',
         day: 'numeric'
       })
+    }
+
+    const formatCurrency = (value) => {
+      const amount = Number(value) || 0
+      return `${currencySymbol.value}${amount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
     }
 
     onMounted(loadOrders)
@@ -160,6 +242,9 @@ export default {
       loading,
       error,
       orders,
+      restockOrders,
+      restockOrdersError,
+      formatCurrency,
       getOrdersByStatus,
       getOrderStatusClass,
       formatDate,
@@ -201,6 +286,28 @@ export default {
 
 .col-value {
   width: 120px;
+}
+
+.col-lead-time {
+  width: 110px;
+}
+
+/* Submitted (restock) orders card: empty/error message */
+.submitted-message {
+  color: #64748b;
+  font-size: 0.875rem;
+  padding: 0.5rem 0;
+}
+
+.restocking-link {
+  margin-left: 0.375rem;
+  color: #2563eb;
+  font-weight: 500;
+  text-decoration: none;
+}
+
+.restocking-link:hover {
+  text-decoration: underline;
 }
 
 /* Items details styling */

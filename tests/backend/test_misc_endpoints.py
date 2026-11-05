@@ -25,6 +25,10 @@ class TestDemandEndpoints:
             assert "forecasted_demand" in forecast
             assert "trend" in forecast
             assert "period" in forecast
+            # Fields used by the Restocking tab
+            assert "category" in forecast
+            assert isinstance(forecast["unit_cost"], (int, float))
+            assert isinstance(forecast["quantity_on_hand"], int)
 
     def test_demand_forecast_trends(self, client):
         """Test that demand forecasts have valid trend values."""
